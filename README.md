@@ -1,31 +1,51 @@
 # Goclasses
-Let’s analyze the problem step by step.
 
----
+Test Series of ML-1
+### Ques(1):
+### Given:
+- Query point \( x_q = (0, 0) \)
+- Points:
+  - \( x_1 = (1, 1) \)
+  - \( x_2 = (1.5, 0) \)
+- Distance metrics:
+  - **Euclidean Distance**: \( d_E = \sqrt{(x_2 - x_1)^2 + (y_2 - y_1)^2} \)
+  - **Manhattan Distance**: \( d_M = |x_2 - x_1| + |y_2 - y_1| \)
 
-### Observations:
-- **Decision Boundary 1 (DB1):**  
-  The boundary is more complex, tightly hugging the data points. This behavior aligns with **1-NN**, as 1-NN classifiers tend to overfit and create decision boundaries around individual points.
+### Step 1: Calculate distances
 
-- **Decision Boundary 2 (DB2):**  
-  The boundary is smoother and less complex. This behavior aligns with **3-NN**, where more neighbors are considered, leading to more generalized decision boundaries.
+#### Euclidean Distance:
+1. From \( x_q \) to \( x_1 \):
+   \[
+   d_E(x_q, x_1) = \sqrt{(1 - 0)^2 + (1 - 0)^2} = \sqrt{1 + 1} = \sqrt{2} \approx 1.41
+   \]
 
----
+2. From \( x_q \) to \( x_2 \):
+   \[
+   d_E(x_q, x_2) = \sqrt{(1.5 - 0)^2 + (0 - 0)^2} = \sqrt{(1.5)^2} = 1.5
+   \]
 
-### Evaluating the Statements:
-1. **DB1 belongs to 3-NN while DB2 belongs to 1-NN.**  
-   **False**. DB1 is associated with 1-NN, and DB2 is associated with 3-NN.
+#### Manhattan Distance:
+1. From \( x_q \) to \( x_1 \):
+   \[
+   d_M(x_q, x_1) = |1 - 0| + |1 - 0| = 1 + 1 = 2
+   \]
 
-2. **DB1 belongs to 1-NN while DB2 belongs to 3-NN.**  
-   **True**. As explained above, DB1 corresponds to 1-NN (complex boundary), and DB2 corresponds to 3-NN (smooth boundary).
+2. From \( x_q \) to \( x_2 \):
+   \[
+   d_M(x_q, x_2) = |1.5 - 0| + |0 - 0| = 1.5 + 0 = 1.5
+   \]
 
-3. **DB1 gives zero test error.**  
-   **False**. DB1 gives zero **training error** because 1-NN memorizes the training data perfectly. However, it doesn’t necessarily guarantee zero test error due to overfitting.
+### Step 2: Compare distances
+- **Euclidean Distance**:
+  - \( d_E(x_q, x_1) = \sqrt{2} \approx 1.41 \)
+  - \( d_E(x_q, x_2) = 1.5 \)
+  - Nearest neighbor: \( x_1 \) (smaller distance)
 
-4. **DB1 gives zero training error.**  
-   **True**. 1-NN always gives zero training error because it correctly classifies all training points.
+- **Manhattan Distance**:
+  - \( d_M(x_q, x_1) = 2 \)
+  - \( d_M(x_q, x_2) = 1.5 \)
+  - Nearest neighbor: \( x_2 \) (smaller distance)
 
----
-
-### Correct Option:
-**B. False, True, False, True**
+### Step 3: Correct Option
+The correct statement is:
+> **C. \( x_1 \) is the nearest neighbor according to Euclidean distance, and \( x_2 \) is the nearest neighbor according to Manhattan distance.**
