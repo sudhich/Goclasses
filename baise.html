@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ridge Regression Bias Visualization</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            color: white;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 30px;
+            backdrop-filter: blur(10px);
+        }
+        h1 {
+            text-align: center;
+            color: #ffd700;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            margin-bottom: 30px;
+        }
+        .charts-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        .chart-wrapper {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+        .chart-title {
+            text-align: center;
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #ffd700;
+        }
+        .controls {
+            text-align: center;
+            margin: 30px 0;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 10px;
+        }
+        .slider-container {
+            margin: 20px 0;
+        }
+        .slider {
+            width: 300px;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 5px;
+            outline: none;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+        }
+        .slider:hover {
+            opacity: 1;
+        }
+        .slider::-webkit-slider-thumb {
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #ffd700;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+        .explanation {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 25px;
+            margin-top: 30px;
+            border-left: 4px solid #ffd700;
+        }
+        .explanation h3 {
+            color: #ffd700;
+            margin-bottom: 15px;
+        }
+        .bias-indicator {
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+            margin: 15px 0;
+            padding: 10px;
+            border-radius: 5px;
+            background: rgba(255, 0, 0, 0.2);
+            border: 2px solid #ff6b6b;
+        }
+        canvas {
+            background: rgba(255, 255, 255, 0.9) !important;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 Ridge Regression: How Regularization Increases Bias</h1>
+        
+        <div class="charts-container">
+            <div class="chart-wrapper">
+                <div class="chart-title">📊 Model Predictions vs True Function</div>
+                <canvas id="predictionChart" width="400" height="300"></canvas>
+            </div>
+            <div class="chart-wrapper">
+                <div class="chart-title">📈 Bias vs Regularization Strength (λ)</div>
+                <canvas id="biasChart" width="400" height="300"></canvas>
+            </div>
+        </div>
+
+        <div class="controls">
+            <div class="slider-container">
+                <label for="lambdaSlider">Regularization Strength (λ): </label>
+                <input type="range" id="lambdaSlider" class="slider" min="0" max="5" step="0.1" value="0">
+                <span id="lambdaValue">0.0</span>
+            </div>
+            <div class="bias-indicator" id="biasIndicator">
+                Current Bias: 0.00
+            </div>
+        </div>
+
+        <div class="explanation">
+            <h3>🔍 What's Happening Here?</h3>
+            <p><strong>Top Left Graph:</strong> Shows how ridge regression predictions (red) deviate from the true function (blue) as λ increases.</p>
+            <p><strong>Top Right Graph:</strong> Demonstrates the direct relationship between regularization strength λ and bias.</p>
+            <p><strong>Key Insights:</strong></p>
+            <ul>
+                <li>🎯 <strong>λ = 0:</strong> No regularization, model can fit the true function perfectly (low bias)</li>
+                <li>⚖️ <strong>λ > 0:</strong> Regularization constrains weights, causing systematic underfitting (increasing bias)</li>
+                <li>📈 <strong>Higher λ:</strong> Stronger constraint → larger systematic error → higher bias</li>
+                <li>🔄 <strong>Trade-off:</strong> We accept higher bias to reduce variance and improve generalization</li>
+            </ul>
+            <p><em>Move the slider to see how increasing λ systematically pulls predictions away from the true function!</em></p>
+        </div>
+    </div>
+
+    <script>
+        // Generate true function data (sinusoidal with some complexity)
+        function generateTrueFunction(x) {
+            return 2 * Math.sin(x) + 0.5 * Math.cos(2*x) + 0.3*x;
+        }
+
+        // Generate ridge regression prediction (simplified simulation)
+        function generateRidgePrediction(x, lambda) {
+            // Simulate how ridge regression would shrink the coefficients
+            const shrinkageFactor = 1 / (1 + lambda);
+            return shrinkageFactor * generateTrueFunction(x);
+        }
+
+        // Calculate bias at a point
+        function calculateBias(x, lambda) {
+            const trueValue = generateTrueFunction(x);
+            const prediction = generateRidgePrediction(x, lambda);
+            return Math.abs(trueValue - prediction);
+        }
+
+        // Create x values
+        const xValues = [];
+        for (let i = 0; i <= 20; i++) {
+            xValues.push(i * 0.5);
+        }
+
+        // Initialize charts
+        let predictionChart, biasChart;
+
+        function initializeCharts() {
+            // Prediction Chart
+            const ctx1 = document.getElementById('predictionChart').getContext('2d');
+            predictionChart = new Chart(ctx1, {
+                type: 'line',
+                data: {
+                    labels: xValues,
+                    datasets: [
+                        {
+                            label: 'True Function',
+                            data: xValues.map(x => generateTrueFunction(x)),
+                            borderColor: '#2196F3',
+                            backgroundColor: 'rgba(33, 150, 243, 0.1)',
+                            borderWidth: 3,
+                            fill: false,
+                            tension: 0.4
+                        },
+                        {
+                            label: 'Ridge Prediction',
+                            data: xValues.map(x => generateRidgePrediction(x, 0)),
+                            borderColor: '#F44336',
+                            backgroundColor: 'rgba(244, 67, 54, 0.1)',
+                            borderWidth: 3,
+                            fill: false,
+                            tension: 0.4,
+                            borderDash: [5, 5]
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        }
+                    },
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Input (x)',
+                                color: '#333'
+                            },
+                            grid: {
+                                color: 'rgba(0,0,0,0.1)'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Output',
+                                color: '#333'
+                            },
+                            grid: {
+                                color: 'rgba(0,0,0,0.1)'
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Bias Chart
+            const ctx2 = document.getElementById('biasChart').getContext('2d');
+            const lambdaValues = [];
+            const biasValues = [];
+            for (let lambda = 0; lambda <= 5; lambda += 0.1) {
+                lambdaValues.push(lambda.toFixed(1));
+                // Average bias across all x values
+                const avgBias = xValues.reduce((sum, x) => sum + calculateBias(x, lambda), 0) / xValues.length;
+                biasValues.push(avgBias);
+            }
+
+            biasChart = new Chart(ctx2, {
+                type: 'line',
+                data: {
+                    labels: lambdaValues,
+                    datasets: [{
+                        label: 'Average Bias',
+                        data: biasValues,
+                        borderColor: '#FF9800',
+                        backgroundColor: 'rgba(255, 152, 0, 0.1)',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        }
+                    },
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Regularization Strength (λ)',
+                                color: '#333'
+                            },
+                            grid: {
+                                color: 'rgba(0,0,0,0.1)'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Bias',
+                                color: '#333'
+                            },
+                            grid: {
+                                color: 'rgba(0,0,0,0.1)'
+                            },
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateCharts(lambda) {
+            // Update prediction chart
+            const newPredictions = xValues.map(x => generateRidgePrediction(x, lambda));
+            predictionChart.data.datasets[1].data = newPredictions;
+            predictionChart.update('none');
+
+            // Calculate and display current bias
+            const avgBias = xValues.reduce((sum, x) => sum + calculateBias(x, lambda), 0) / xValues.length;
+            document.getElementById('biasIndicator').textContent = `Current Bias: ${avgBias.toFixed(2)}`;
+
+            // Add current point to bias chart (visual indicator)
+            // This is just for visual feedback - the line is already complete
+        }
+
+        // Event listener for slider
+        document.getElementById('lambdaSlider').addEventListener('input', function(e) {
+            const lambda = parseFloat(e.target.value);
+            document.getElementById('lambdaValue').textContent = lambda.toFixed(1);
+            updateCharts(lambda);
+        });
+
+        // Initialize when page loads
+        window.addEventListener('load', function() {
+            initializeCharts();
+        });
+    </script>
+</body>
+</html>
